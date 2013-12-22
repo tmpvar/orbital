@@ -1,18 +1,18 @@
 var through = require('through');
+var involve = require('../involve');
+var path = require('path');
 var Stream = require('stream').Stream;
 var builtins = require('repl')._builtinLibs;
 
-// TODO: read through package-json and include packages
 
-var availableNodes = {};
+function orbital(flow, definitions) {
+  var pkg = involve(path.join(orbital.path, 'package.json'));
+  var availableNodes = Object.create(pkg.dependencies || {});
 
-
-// Core modules
-builtins.forEach(function(name) {
-  availableNodes[name] = require(name);
-});
-
-module.exports = function(flow, definitions) {
+  // Core modules
+  builtins.forEach(function(name) {
+    availableNodes[name] = require(name);
+  });
 
   if (definitions) {
     Object.keys(definitions).forEach(function(key) {
@@ -96,6 +96,13 @@ module.exports = function(flow, definitions) {
     ret.write = head.write.bind(head);
   }
 
-  ret.pipe = tail.pipe.bind(tail);  
+  if (tail.pipe) {
+    ret.pipe = tail.pipe.bind(tail);  
+  }
   return ret;
 }
+
+orbital.path = path.join(path.dirname(require.main.filename));
+
+
+module.exports = orbital;

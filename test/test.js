@@ -1,8 +1,9 @@
-var orbital = require('./orbital');
+var orbital = require('../orbital');
 var assert = require('assert');
 var through = require('through');
 var fs = require('fs');
 
+orbital.path = __dirname;
 
 var trap = function(stream, fn) {
   var data = null;
@@ -78,6 +79,17 @@ describe('orbital', function() {
       assert.equal(fs.readFileSync(__filename).toString(), data.toString());
       d();
     });
+  });
+
+
+  it('should handle involved deps', function(d) {
+    trap(orbital([
+      ['a']
+    ]), function(data) {
+      assert.equal('A', data);
+      d();
+    }).end('a');
+
   });
 
 });
