@@ -1,9 +1,22 @@
 var orbital = require('./orbital');
 var assert = require('assert');
 var through = require('through');
+var fs = require('fs');
+
 
 var trap = function(stream, fn) {
-  stream.pipe(through(fn));
+  var data = null;
+  stream.pipe(through(function(d) {
+    if (data === null) {
+      data = d
+    } else if (Buffer.isBuffer(data)) {
+      data = data.concat(d);
+    } else {
+      data += d;
+    }
+  }, function() {
+    fn(data);
+  }));
   return stream;
 }
 
@@ -25,7 +38,7 @@ describe('orbital', function() {
     }
   });
 
-  it('should handle passed defines', function(done) {
+   it('should handle passed defines', function(done) {
     // Test basic structure
     var basic = [
       ['a', 'b', 'c']
@@ -50,11 +63,22 @@ describe('orbital', function() {
       d();
     }
   });
+
+  it('should handle constants', function(d) {
+    trap(orbital([['process.title']]), function(data) {
+      assert.equal(process.title, data);
+      d();
+    })
+  });
+
+  it('should handle be able to use core modules', function(d) {
+    trap(orbital([
+      [{ name : 'fs.createReadStream', args: [__filename] }]
+    ]), function(data) {
+      assert.equal(fs.readFileSync(__filename).toString(), data.toString());
+      d();
+    });
+  });
+
 });
-
-// Test nested structure
-
-
-// Test streams
-
 
